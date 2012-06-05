@@ -1,0 +1,6 @@
+/node_modules
+/.settings
+.project
+.buildpath
+/.idea
+/local

@@ -1,0 +1,21 @@
+{
+    "name": "gAPI4node",
+    "description": "google api for node.js (now only spreadsheet)",
+    "version": "0.0.1",
+    "author": {
+        "name": "hiroqn",
+        "email": "hiroqn1008@gmail.com"
+    },
+    "private": true,
+    "dependencies": {
+        "request": "2.9.x",
+        "ejs": ">= 0.0.1",
+        "feedme": "0.2.x"
+    },
+    "engines": {
+        "node": ">= 0.6.0"
+    },
+    "devDependencies": {
+        "vows": "0.6.x"
+    }
+}

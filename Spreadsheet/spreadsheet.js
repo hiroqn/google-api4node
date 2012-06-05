@@ -148,15 +148,71 @@ WorksheetClient.prototype.getListFeed = function (callback) {
 WorksheetClient.prototype.getCellFeed = function (callback) {
   this.service._get(this.cellURL, null, callback);
 };
-function queryBuilder() {
-
+/**
+ * @param query
+ * @return {String}
+ */
+function andQuery(query) {
+  var prop, and = [];
+  Object.keys(query).forEach(function (field) {
+    prop = query[field];
+    switch (typeof prop) {
+    case 'string':
+    case 'number':
+      and.push(field + '=' + prop);
+      break;
+    case 'object':
+      if(prop &&!Array.isArray(prop)){
+        Object.keys(prop || {}).forEach(function (operator) {
+          var op;
+          switch (operator) {
+          case '$ne':
+            op = '!=';
+            break;
+          case '$gt':
+            op = '>';
+            break;
+          case '$lt':
+            op = '<';
+            break;
+          case '$gte':
+            op = '>=';
+            break;
+          case '$lte':
+            op = '<=';
+            break;
+          case '$eq':
+            op = '=';
+            break;
+          default :
+            return;
+          }
+          return and.push(field + op + prop[operator]);
+        });
+      }
+    }
+  });
+  return and.join(' and ');
 }
+/**
+ * @param query
+ * @return {String}
+ */
+function queryBuilder(query) {
+  var  prop, and = andQuery(query);
+  if(query.$or && Array.isArray(query.$or)){
+    var or = query.$or.map(andQuery).filter(Boolean);
+  }
+  or.push(and);
+  return or.join(' or ');
+}
+
 /**
  * @param query
  * @param {Function} callback
  */
 WorksheetClient.prototype.getListEntry = function (query, callback) {
-  var qs;
+  var qs = null;
   if (query) {
     //orderby,reverse
     qs = {};
@@ -166,8 +222,15 @@ WorksheetClient.prototype.getListEntry = function (query, callback) {
     if (query.reverse) {
       qs.reverse = 'true';
     }
+    if (query.query) {
+      if (typeof query.query === 'object') {
+        qs.sq = queryBuilder(query);
+      } else {
+        qs.sp = query.query;
+      }
+    }
   }
-  this.service._get(this.listURL, null,
+  this.service._get(this.listURL, qs,
       function (err, feed) {
         if (err) {
           return callback(err);
@@ -398,3 +461,5 @@ SpreadsheetService.prototype.worksheet = function (wsEntry/* || key */, wsId,
 };
 
 module.exports = SpreadsheetService;
+SpreadsheetService.queryBuilder = queryBuilder;
+

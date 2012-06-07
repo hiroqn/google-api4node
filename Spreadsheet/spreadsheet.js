@@ -353,19 +353,7 @@ SpreadsheetClient.prototype.insert = function (worksheet, callback) {
   var body = templates.insertWorksheets(worksheet || {});
   this.service._post(this.url, body, callback);
 };
-/**
- * @param entry
- * @constructor
- * @augments Service
- */
-function SpreadsheetEntry(entry) {
-  this.title = entry.title;
-  this.updated = entry.updated;
-  var r = entry.content.src.split('/');
-  this.key = r[5];
-  this.visibility = r[6];
-  this.projection = r[7];
-}
+
 /**
  *
  * @param feed
@@ -378,6 +366,7 @@ function SpreadsheetEntryFactory(feed, service){
     function Entry(item) {
       this.title = item.title;
       this.updated = item.updated;
+      this.author = item.author;
       var r = item.id('/');
       this.key = r[5];
       this.etag = item["gd:etag"];
@@ -504,6 +493,19 @@ SpreadsheetService.queryBuilder = queryBuilder;
 /**
  * obsolete
  */
+/**
+ * @param entry
+ * @constructor
+ * @augments Service
+ */
+function SpreadsheetEntry(entry) {
+  this.title = entry.title;
+  this.updated = entry.updated;
+  var r = entry.content.src.split('/');
+  this.key = r[5];
+  this.visibility = r[6];
+  this.projection = r[7];
+}
 /**
  * @param {Function} callback
  */

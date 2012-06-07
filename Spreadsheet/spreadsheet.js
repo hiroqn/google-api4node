@@ -162,7 +162,7 @@ function andQuery(query) {
       and.push(field + '=' + prop);
       break;
     case 'object':
-      if(prop &&!Array.isArray(prop)){
+      if (prop && !Array.isArray(prop)) {
         Object.keys(prop || {}).forEach(function (operator) {
           var op;
           switch (operator) {
@@ -199,8 +199,8 @@ function andQuery(query) {
  * @return {String}
  */
 function queryBuilder(query) {
-  var  prop, and = andQuery(query);
-  if(query.$or && Array.isArray(query.$or)){
+  var prop, and = andQuery(query);
+  if (query.$or && Array.isArray(query.$or)) {
     var or = query.$or.map(andQuery).filter(Boolean);
   }
   or.push(and);
@@ -278,6 +278,7 @@ WorksheetClient.prototype.cellClient = function (row, col) {
 };
 /**
  * @param feed
+ * @param service
  * @return {Array}
  */
 function WorksheetEntryFactory(feed, service) {
@@ -365,7 +366,32 @@ function SpreadsheetEntry(entry) {
   this.visibility = r[6];
   this.projection = r[7];
 }
-
+/**
+ *
+ * @param feed
+ * @param service
+ * @return {Array}
+ */
+function SpreadsheetEntryFactory(feed, service){
+  if (feed["opensearch:totalresults"] > 0) {
+    var result = feed.id.split('/');
+    function Entry(item) {
+      this.title = item.title;
+      this.updated = item.updated;
+      var r = item.id('/');
+      this.key = r[5];
+      this.etag = item["gd:etag"];
+    }
+    Entry.prototype.visibility = result[5];
+    Entry.prototype.projection = result[6];
+    Entry.prototype.client = function () {
+      return new SpreadsheetClient(service, this);
+    };
+    return feed.items.map(function (item) {return new Entry(item);});
+  } else {
+    return [];
+  }
+}
 /**
  * @param {String} accessToken
  * @constructor
@@ -373,27 +399,26 @@ function SpreadsheetEntry(entry) {
 function SpreadsheetService(accessToken) {
   Service.call(this, accessToken);
 }
-
+/**
+ * inherit
+ */
 util.inherits(SpreadsheetService, Service);
 /**
- * @type {String}
+ * @param service
+ * @param visibility
+ * @param projection
+ * @constructor
  */
-SpreadsheetService.prototype.spreadsheetsURL = baseURL +
-                                               'spreadsheets/private/full';
-
+function PseudoClient(service, visibility, projection) {
+  this.ssURL = baseURL + 'spreadsheets/' + visibility + '/' + projection;
+  this.service = service;
+}
 /**
- * @param {Function} callback
+ * @param callback
  */
-SpreadsheetService.prototype.getFeed = function (callback) {
-  this._get(this.spreadsheetsURL, null, callback);
-};
-
-/**
- * @param {Function} callback
- */
-SpreadsheetService.prototype.getEntry = function (callback) {
-  var service = this;
-  service._get(this.spreadsheetsURL, null, function (err, feed) {
+PseudoClient.prototype.getEntry = function (callback) {
+  var service = this.service;
+  service._get(this.ssURL, null, function (err, feed) {
     if (err) {
       return callback(err);
     }
@@ -404,7 +429,20 @@ SpreadsheetService.prototype.getEntry = function (callback) {
                   }) : [];
     callback(err, entries);
   });
-
+};
+/**
+ * @param callback
+ */
+PseudoClient.prototype.getFeed = function (callback) {
+  this.service._get(this.ssURL, null, callback);
+};
+/**
+ *
+ * @param {String} [visibility]
+ * @param {String} [projection]
+ */
+SpreadsheetService.prototype.client = function (visibility, projection) {
+  return new PseudoClient(this, visibility || 'private', projection || 'full')
 };
 /**
  *
@@ -463,3 +501,30 @@ SpreadsheetService.prototype.worksheet = function (wsEntry/* || key */, wsId,
 module.exports = SpreadsheetService;
 SpreadsheetService.queryBuilder = queryBuilder;
 
+/**
+ * obsolete
+ */
+/**
+ * @param {Function} callback
+ */
+SpreadsheetService.prototype.getFeed = function (callback) {
+  this._get(this.spreadsheetsURL, null, callback);
+};
+
+/**
+ * @param {Function} callback
+ */
+SpreadsheetService.prototype.getEntry = function (callback) {
+  var service = this;
+  service._get(this.spreadsheetsURL, null, function (err, feed) {
+    if (err) {
+      return callback(err);
+    }
+
+    var entries = feed["opensearch:totalresults"] ?
+                  feed.items.map(function (item) {
+                    return new SpreadsheetEntry(item);
+                  }) : [];
+    callback(err, entries);
+  });
+};

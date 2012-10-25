@@ -1,1 +1,1 @@
-exports.SpreadsheetService = require('./Spreadsheet/spreadsheet.js');
+exports.SpreadsheetService = require('./Spreadsheet/index.js');

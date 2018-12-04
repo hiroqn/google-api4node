@@ -8,7 +8,7 @@
     },
     "private": true,
     "dependencies": {
-        "request": "2.9.x",
+        "request": ">=2.68.0",
         "ejs": ">= 0.0.1",
         "feedme": "0.2.x"
     },
